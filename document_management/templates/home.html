@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .image {
+            position: relative;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .image-options {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: none;
+        }
+
+        .image:hover .image-options {
+            display: block;
+        }
+
+        .option-button {
+            background: #3498db;
+            color: #fff;
+            padding: 5px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .create-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    {% for image in image_list %}
+    <div class="image">
+        <img src="{{ image.storage_location }}" alt="{{ image.name }}" width="200">
+        <div class="image-options">
+            <button class="option-button">Download</button>
+            <button class="option-button">Preview</button>
+            <button class="option-button">Edit</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<button class="create-button">Create</button>
+
+
+</body>
+</html>
