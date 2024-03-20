@@ -1,13 +1,11 @@
 import os
 from pathlib import Path
 
+
 import pyrebase
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-
 
 
 # Quick-start development settings - unsuitable for production
@@ -41,8 +39,9 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+    'django.middleware.clickjacking.XFrameOptionsMiddleware', 
+    'django.middleware.gzip.GZipMiddleware',  
+    ]
 
 ROOT_URLCONF = 'document_management.urls'
 
@@ -62,6 +61,8 @@ TEMPLATES = [
         },
     },
 ]
+
+#GZIP_COMPRESS_LEVEL = 6  # Adjust the compression level (0 to 9, 6 is the default)
 
 WSGI_APPLICATION = 'document_management.wsgi.application'
 
@@ -105,6 +106,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
+
+
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -124,6 +127,12 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Set session timeout in seconds (e.g., 15 minutes)
+SESSION_COOKIE_AGE = 900
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Database-backed sessions
+SESSION_COOKIE_NAME = 'my_session_cookie'  # Custom session cookie name 
+SESSION_SAVE_EVERY_REQUEST = True
 
 
 # Firebase cloud storage credentials

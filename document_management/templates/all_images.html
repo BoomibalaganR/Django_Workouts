@@ -111,19 +111,21 @@
     </script>
 </head>
 <body>
-
+<h3 color='Green'>{{ request.session.success_msg }}</h3>
 <div class="container">
     {% for image in images %}
         <div class="image">
-            <h2>{{ image.name }}</h2>
-            <p>Size: {{ image.size }} kb</p>
-            <p>Description:...</p>
+            <h2><a href={%url 'single-image' name=image.name %}>{{image.name }}</a></h2>
             
             <div class="actions">
                 <a class="view-button" href="javascript:void(0);" onclick="toggleImage('{{ image.name }}')">View</a>
-                <a class="download-button" href="{% url 'download-image' image.id %}"  target="_blank">Download</a>
-                <a class="delete-button" href="{% url 'delete-image' image.id %}">Delete</a>
+                <a class="download-button" href="{% url 'download-image' image.id %}"  >Download</a>
+                <form method="post" action="{% url 'delete-image' image.id %}">
+                    {% csrf_token %}
+                    <button type=submit class='delete-button'>Delete</button>
+                </form>
             </div>
+            <!--<a class="delete-button" href="{% url 'delete-image' image.id %}">Delete</a>!-->
             
             <img id="{{ image.name }}" src="{{ image.url }}" alt="{{ image.name }}">
         </div>

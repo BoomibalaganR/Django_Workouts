@@ -1,36 +1,54 @@
-from django.shortcuts import render
+from django.shortcuts import (render,
+                              redirect,
+                              resolve_url) 
 from django.http import (HttpResponse,
-                         JsonResponse) 
+                         JsonResponse)   
+from django.views.decorators.http import (condition,
+                                         require_GET,require_POST )  
+from django.views.decorators.gzip import gzip_page
 
 from .models import ImageMetadata
 from document_management.settings import storage 
+from .utils import calculate_Etag, calculate_last_modified 
+
+from .forms import ImageUploadForm
 
 import requests
 
-
-
-def get_All_images(request):  
-     
+#@gzip_page
+@condition(last_modified_func=calculate_last_modified, etag_func=calculate_Etag)  
+@require_GET
+def get_All_images(request): 
+ 
     # get image details from mongoDB
-    images_details = ImageMetadata.objects.all()
+    images_details = ImageMetadata.objects.all() 
+    response = render(request, 'all_images.html', {'images': images_details} ) 
     
-    return render(request, 'all_images.html', {'images': images_details} )
-    
+    return response 
 
 
-def upload_image(request): 
-    
-    if request.method == 'POST' and request.FILES['image']: 
-        
-        # get image from request
-        uploaded_image = request.FILES['image']
+def create_image(request):  
+    forms = ImageUploadForm()
+    return render(request, template_name='create-page.html',context={'form':forms})
 
+
+@require_POST
+def upload_image(request):  
+    
+    form = ImageUploadForm(request.POST, request.FILES) 
+    if form.is_valid(): 
+        uploaded_image = form.cleaned_data["image_file"]
+
+    
         # make destination path
         destination_path = "images/" + uploaded_image.name 
          
         # check if filename already exit or not
-        if ImageMetadata.objects.filter(name=uploaded_image.name).count() > 0: 
-            return JsonResponse({"error": "yes", "message": "file name already exits"}) 
+        if ImageMetadata.objects.filter(name=uploaded_image.name).count() > 0:  
+           
+            #return JsonResponse({"error": "yes", "message": "file name already exits"})  
+            response =  redirect(resolve_url("create-image")) 
+            return response
         
         # Upload image to Firebase Cloud Storage
         storage.child(destination_path).put(uploaded_image.read())
@@ -43,12 +61,19 @@ def upload_image(request):
             storage_path = destination_path,
             url=storage.child(destination_path).get_url(token=None)
         )
-        metadata.save()
+        metadata.save() 
+        
+       
+        # Use reverse to get the URL dynamically
+        redirect_url = resolve_url('all-images')
 
-        # success message
-        return HttpResponse("<h1>Image uploaded successfully.</h1>")
-
-
+        # Send a redirect response with custom headers
+        response = redirect(redirect_url)  
+        return response 
+    
+    return HttpResponse("<h2>image not in our request</h2>")
+    
+    
 def delete_image(request, image_id):  
     
     try:
@@ -60,14 +85,27 @@ def delete_image(request, image_id):
 
         # second, delete actual file from the storage (firebase)
         storage.delete(image_instance.storage_path,token=None)
+        
+        # create response object with success message
+        response = HttpResponse("<h2>Image deleted successfully.</h2>") 
+        
+        # Use reverse to get the URL dynamically
+        redirect_url = resolve_url('all-images')
 
-        return HttpResponse("<h2>Image deleted successfully.</h2>") 
+        # Send a redirect response with custom headers
+        response = redirect(redirect_url)
+       
+        
+        
+        return response
+
     
     except ImageMetadata.DoesNotExist:
         return HttpResponse("Image not found.", status=404) 
     
     
-
+@condition(last_modified_func=calculate_last_modified, etag_func=calculate_Etag)  
+@require_GET
 def download_image(request, image_id): 
     
     # get image_instance from mongoDb using image id
@@ -95,3 +133,5 @@ def download_image(request, image_id):
         return response 
     else:
         return HttpResponse("image not downloaded..")
+
+
