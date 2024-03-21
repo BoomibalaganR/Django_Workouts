@@ -29,15 +29,15 @@ class JWTAuthMixin:
 
     def dispatch(self, request, *args, **kwargs): 
         
-        token = request.headers.get('Authorization')
-        try:
+        try:  
+            token = request.headers.get('Authorization')
             token = token.split('Bearer ')[-1]    
             decoded_token = self.validate_jwt_token(token)   
-            print(decoded_token)
-            
-            return super().dispatch(request, *args, **kwargs)
-         
+            print(decoded_token) 
         except AttributeError: 
-            return JsonResponse({'error': 'token missing'}, status=401)
+            return JsonResponse({'error': "token missing"}, status=401)
+        
+        try: 
+            return super().dispatch(request, *args, **kwargs)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=401)

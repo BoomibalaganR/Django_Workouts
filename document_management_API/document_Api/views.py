@@ -6,15 +6,21 @@ from django.views.generic import (DetailView,
                                   CreateView,
                                   View, 
                                   UpdateView,
-                                  ListView)  
+                                  ListView)   
+
+from django.views.decorators.cache import cache_page 
+from django.core.cache import cache as django_cache
+from django.utils.decorators import method_decorator
 
 import json
 from .models import Document
 from .forms import DocumentUploadForm,DocumentUpdateForm
 from document_management_API.settings import storage   
-from .utils import generate_jwt_token,JWTAuthMixin 
+from .utils import generate_jwt_token,JWTAuthMixin  
+from .decorators import cache
 
-
+GET_ALL_RECORDS_CACHE_KEY = 'all_records'
+GET_SINGLE_RECORD_CACHE_KEY_PREFIX = 'single_record_'
 
 
 # upload new document using class based 
@@ -22,6 +28,7 @@ class DocumentCreateView(JWTAuthMixin, CreateView):
     
     form_class = DocumentUploadForm  
     model = Document 
+    
     
     def form_valid(self, form):  
         
@@ -48,9 +55,12 @@ class DocumentCreateView(JWTAuthMixin, CreateView):
         form_instance.content_type = file_obj.content_type 
         form_instance.storage_path = destination_path
         form_instance.url=storage.child(destination_path).get_url(token=None)
-        form.save()
+        form.save()  
         
-        return JsonResponse({'success': True, 'message': 'Data saved successfully'})
+        # delete cache
+        django_cache.delete(GET_ALL_RECORDS_CACHE_KEY)
+        
+        return JsonResponse({'success': True, 'message': 'Data saved successfully'}, status=200)
 
     def form_invalid(self, form):
         return JsonResponse({'success': False, 'message': 'Form validation failed'}, status=400)
@@ -59,13 +69,21 @@ class DocumentCreateView(JWTAuthMixin, CreateView):
 # get all documents
 class DocumentListView(JWTAuthMixin, ListView):
     model = Document
-    
-    def get(self, request, *args, **kwargs):
+
+   # @cache(key='all-record',timeout=60)
+    def get(self, request, *args, **kwargs): 
+        
+        cached_data =  django_cache.get(GET_ALL_RECORDS_CACHE_KEY)  
+        if cached_data is not None: 
+            return cached_data 
+        
         # Retrieve queryset
-        queryset = self.get_queryset()
+        queryset = self.get_queryset() 
+       
+        print("------->>>>>>>>>","no cache available..") 
         
         if len(queryset)== 0: 
-            return JsonResponse({'message': 'no data available'})
+            return JsonResponse({'message': 'no data available'},status=404)
 
         # Serialize queryset to JSON
         serialized_data = serialize('json', queryset)
@@ -73,7 +91,11 @@ class DocumentListView(JWTAuthMixin, ListView):
         list_of_file = [file['fields'] for file in json.loads(serialized_data)]
         
         # Return JSON response
-        return JsonResponse( {'data':list_of_file}, status=200, safe=False)
+        response =  JsonResponse( {'data':list_of_file}, status=200, safe=False)  
+        
+        # to save response in cache
+        django_cache.set(GET_ALL_RECORDS_CACHE_KEY, response, timeout=60*2) 
+        return response
     
     
 
@@ -81,11 +103,12 @@ class DocumentListView(JWTAuthMixin, ListView):
 class DocumentDetailView(JWTAuthMixin, DetailView): 
     model = Document 
 
+    
     def get(self, request, *args, **kwargs): 
         
         # Retrieve object by file name
         pk = kwargs.get('name') 
-        
+        print("---->>>>>>","no cache available")
         try:
             obj = self.model.objects.get(name=pk) 
     
@@ -108,7 +131,10 @@ class DocumentDeleteView(JWTAuthMixin, View):
         try:
             document = Document.objects.get(name=name)
             document.delete() 
-            storage.delete(document.storage_path,token=None) 
+            storage.delete(document.storage_path,token=None)   
+            
+            # delete cache
+            django_cache.delete(GET_ALL_RECORDS_CACHE_KEY)
             
             return JsonResponse({'message': 'Document deleted successfully'}, status=200)
         except Document.DoesNotExist:
@@ -119,6 +145,7 @@ class DocumentDeleteView(JWTAuthMixin, View):
 class DocumentDownloadView(JWTAuthMixin, DetailView):    
     model = Document
 
+   
     def get(self, request, *args, **kwargs): 
         
         # Retrieve object by file name
@@ -127,7 +154,7 @@ class DocumentDownloadView(JWTAuthMixin, DetailView):
         try:
             obj = self.model.objects.get(name=name) 
             data = {'url':obj.url}
-            return JsonResponse({'error':'false','data':data})
+            return JsonResponse({'error':'false','data':data},status=200)
         
         except self.model.DoesNotExist:
             # file not found given name doesnot match
@@ -145,12 +172,15 @@ class DocumentUpdateView(JWTAuthMixin, UpdateView):
             try:
                 instance = self.model.objects.get(name = name)  
                 update_data = json.loads(request.body)
-                print("--->>>>>>>",instance, update_data)
-                
+
                 form = self.form_class(update_data, instance=instance)
                 if form.is_valid():
-                    form.save()
-                    return JsonResponse({'message': 'description updated successfully'})
+                    form.save()   
+                    
+                    # delete cache
+                    django_cache.delete(GET_ALL_RECORDS_CACHE_KEY)
+                    
+                    return JsonResponse({'message': 'description updated successfully'},status=200)
                 else:
                     return JsonResponse({'errors': form.errors}, status=400)
             except self.model.DoesNotExist:

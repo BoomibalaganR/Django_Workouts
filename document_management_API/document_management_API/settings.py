@@ -86,7 +86,19 @@ DATABASES = {
         }
         
     }
+} 
+
+# Cache mechanisms
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/',  # Adjust the host, port, and database number as needed
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
 }
+
 
 
 # Password validation
