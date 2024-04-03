@@ -67,7 +67,7 @@ class PostRetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
         
     
     def get_permissions(self):
-        if self.request.method in ("PATCH", "DELETE"):
+        if self.request.method in ('PATCH', 'DELETE'):
             # For POST requests (creating posts), only authenticated users are allowed
             return [IsAuthenticated(),IsOwnerOrReadOnly()]
         else:
