@@ -3,10 +3,8 @@ from rest_framework.generics import (ListCreateAPIView,
                                      get_object_or_404)     
 from rest_framework_simplejwt.authentication import JWTStatelessUserAuthentication,JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.exceptions import (ValidationError,NotFound,
-                                       server_error)
-from rest_framework.response import Response 
-from rest_framework import status
+from rest_framework.exceptions import (ValidationError)
+from rest_framework.pagination import PageNumberPagination 
 
 from bson import ObjectId  
 from bson.errors import InvalidId 
@@ -14,7 +12,6 @@ from bson.errors import InvalidId
 from .serializers import PostSerializer
 from .models import Post   
 
-from blog_api.authentication import CustomJWTAuthentication
 from blog_api.permissions import IsOwnerOrReadOnly
 
 
