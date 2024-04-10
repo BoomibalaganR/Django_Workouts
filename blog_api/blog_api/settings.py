@@ -45,11 +45,14 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware', 
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    # "django.middleware.cache.UpdateCacheMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    # "django.middleware.cache.FetchFromCacheMiddleware",
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware', 
+    
 ]
 
 ROOT_URLCONF = 'blog_api.urls'
@@ -88,6 +91,17 @@ DATABASES = {
         
     }
 } 
+
+# Cache mechanisms
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/',  # Adjust the host, port, and database number as needed
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
 
 
 
@@ -140,13 +154,17 @@ AUTH_USER_MODEL = 'author.User'
 
 # rest framework setting
 REST_FRAMEWORK = {
-    #  'DEFAULT_AUTHENTICATION_CLASSES': [
-    # #     #'rest_framework_simplejwt.authentication.JWTAuthentication', 
-    # #     # 'rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication',
-    #     '
-    # ], 
+ 
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 1 
+    'PAGE_SIZE': 10 , 
+    # 'DEFAULT_THROTTLE_CLASSES': [
+    #     'rest_framework.throttling.AnonRateThrottle',
+    #     'rest_framework.throttling.UserRateThrottle'
+    # ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/min',
+        'user': '10/min'
+    }
    
 } 
 
