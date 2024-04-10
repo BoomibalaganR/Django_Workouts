@@ -73,8 +73,7 @@ class PostListCreateView(ListCreateAPIView):
    
 class PostRetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView): 
     queryset = Post.objects.all() 
-    serializer_class = PostSerializer   
-    throttle_classes= [AnonRateThrottle]  
+    serializer_class = PostSerializer    
     
     http_method_names = [
         "get",
